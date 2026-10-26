@@ -1,0 +1,166 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MAN
+  WOMAN
+}
+
+enum InterestGender {
+  MEN
+  WOMEN
+  EVERYONE
+}
+
+enum GroupStatus {
+  ACTIVE
+  DECIDING
+  ARCHIVED
+}
+
+enum MemberDecision {
+  STAY
+  LEAVE
+  ONE_ON_ONE
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  bio           String         @default("")
+  gender        Gender
+  interestedIn  InterestGender @default(EVERYONE)
+  birthDate     DateTime
+  latitude      Float?
+  longitude     Float?
+  maxDistanceMi Int            @default(25)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  photos              Photo[]
+  interests           UserInterest[]
+  swipesGiven         Swipe[]              @relation("Swiper")
+  swipesReceived      Swipe[]              @relation("Swipee")
+  memberships         GroupMember[]
+  conversationMembers ConversationMember[]
+  messages            Message[]
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  userId    String
+  blobName  String
+  sortOrder Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Interest {
+  id    String         @id @default(cuid())
+  name  String         @unique
+  users UserInterest[]
+}
+
+model UserInterest {
+  userId     String
+  interestId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([userId, interestId])
+}
+
+model Swipe {
+  id         String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  liked      Boolean
+  createdAt  DateTime @default(now())
+  fromUser   User     @relation("Swiper", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User     @relation("Swipee", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId])
+}
+
+model Group {
+  id            String      @id @default(cuid())
+  status        GroupStatus @default(ACTIVE)
+  startsAt      DateTime    @default(now())
+  endsAt        DateTime
+  decidingSince DateTime?
+  createdAt     DateTime    @default(now())
+  members       GroupMember[]
+  messages      Message[]
+  games         GameSession[]
+
+  @@index([status])
+}
+
+model GroupMember {
+  groupId    String
+  userId     String
+  decision   MemberDecision?
+  decidedAt  DateTime?
+  dmUserIds  String[]        @default([])
+  group      Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@index([userId])
+}
+
+model Conversation {
+  id        String                 @id @default(cuid())
+  createdAt DateTime               @default(now())
+  members   ConversationMember[]
+  messages  Message[]
+}
+
+model ConversationMember {
+  conversationId String
+  userId         String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  body           String
+  senderId       String
+  groupId        String?
+  conversationId String?
+  createdAt      DateTime      @default(now())
+  sender         User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  group          Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@index([conversationId, createdAt])
+}
+
+model GameSession {
+  id        String   @id @default(cuid())
+  groupId   String
+  type      String
+  state     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+}

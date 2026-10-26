@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Avenir Next", "Segoe UI", sans-serif;
+  --font-serif: Georgia, "Iowan Old Style", Palatino, serif;
+  --color-cream: #f4f0e6;
+  --color-ink: #1c2822;
+  --color-leaf: #1f6b4a;
+  --color-leaf-dark: #164e36;
+  --color-sand: #e6dfd0;
+  --color-clay: #b64b32;
+  --color-paper: #fffdf8;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
